@@ -1,7 +1,10 @@
 from __future__ import print_function
-from PIL import Image, ImageTk
+# from PIL import Image, ImageTk
 from contextlib import contextmanager
 from tkinter import *
+from urllib.parse import quote_plus
+from bs4 import BeautifulSoup
+from selenium import webdriver
 from urllib.request import urlopen, Request
 import urllib
 import bs4
@@ -14,10 +17,10 @@ import pickle
 import os.path
 
 date_format = "%Y년 %m월 %d일"
-xlarge_text_size = 88
-large_text_size = 42
-medium_text_size = 20
-small_text_size = 12
+xlarge_text_size = 40
+large_text_size = 30
+medium_text_size = 15
+small_text_size = 10
 locale = 'ko_kr' 
 setfont = '맑은 고딕'
 DayOfWeek = ['월', '화', '수', '목', '금', '토', '일']
@@ -39,7 +42,7 @@ class Clock(Frame):
         self.dayOWLbl.pack(side=TOP, anchor=E)
         
         # 시계 밑에 워터마크
-        self.watermark = '\n캡스톤 김휘진 양상열 황승'
+        self.watermark = '\n캡스톤 김휘진 양상열 황승현'
         self.watermarkLbl = Label(self, text=self.watermark, font=(setfont, small_text_size, 'bold'), fg="white", bg="black")
         self.watermarkLbl.pack(side=TOP, anchor=E)
         
@@ -73,7 +76,6 @@ class Weather(Frame):
         # tk 새로고침 위한 destroy()
         for widget in self.weatherContainer.winfo_children():
             widget.destroy()
-            print('destroy')
         
         # 네이버에서 파싱
         self.enc_location = urllib.parse.quote(weather_locale + '+날씨')
@@ -129,7 +131,7 @@ class News(Frame):
         # 구글 rss
         headlines_url = "https://news.google.com/rss?hl=ko&gl=KR&ceid=KR:ko"     
         feed = feedparser.parse(headlines_url)
-                
+
         for post in feed.entries[0:5]:
             self.headline = Label(self.headlinesContainer, text=post.title, font=(setfont, small_text_size), fg="white", bg="black")
             self.headline.pack(side=TOP, anchor=W)
@@ -142,6 +144,22 @@ class News(Frame):
             
         # 4시간마다 업데이트
         self.after(hour_4, self.get_headlines)
+
+class Naver_RT_search_word(Frame):
+    def __init__(self, parent):
+        Frame.__init__(self, parent)
+        self.config(bg='black')
+        self.title = '실시간 검색어'
+        self.newsLbl = Label(self, text=self.title, font=(setfont, large_text_size, 'bold'), fg="white", bg="black")
+        self.newsLbl.pack(side=TOP, anchor=W)
+        self.headlinesContainer = Frame(self, bg="black")
+        self.headlinesContainer.pack(side=TOP)
+        self.get_headlines()
+        driver = webdriver.Chrome(r'C:\Users\hshyu\ChromeWebDriver\chromedriver.exe')
+        driver.get(url)
+        
+    def parsing(self):
+        
 
 class FullscreenWindow:
     def __init__(self):
@@ -159,20 +177,17 @@ class FullscreenWindow:
         
         # 시계
         self.clock = Clock(self.topFrame)
-        self.clock.pack(side=RIGHT, anchor=N, padx=100, pady=60)
+        self.clock.pack(side=RIGHT, anchor=N, padx=50, pady=30)
         
         # 뉴스
         self.news = News(self.bottomFrame)
-        self.news.pack(side=LEFT, anchor=W, padx=100, pady=60)
+        self.news.pack(side=LEFT, anchor=W, padx=50, pady=30)
         
         # 날씨
         self.weather = Weather(self.topFrame)
-        self.weather.pack(side=LEFT, anchor=N, padx=100, pady=60)
-        '''
-        # 캘린더
-        self.calender = Calendar(self.bottomFrame)
-        self.calender.pack(side = RIGHT, anchor=E, padx=100, pady=60)
-        '''
+        self.weather.pack(side=LEFT, anchor=N, padx=50, pady=30)
+
+
     def go_fullscreen(self, event=None):
         self.state = not self.state
         self.tk.attributes("-fullscreen", self.state)
