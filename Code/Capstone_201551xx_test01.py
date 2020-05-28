@@ -11,10 +11,8 @@ import bs4
 import time
 
 import feedparser
-# 캘린더 API 
-import datetime
-import pickle
-import os.path
+from win32api import GetSystemMetrics
+
 
 date_format = "%Y년 %m월 %d일"
 xlarge_text_size = 40
@@ -25,7 +23,7 @@ locale = 'ko_kr'
 setfont = '맑은 고딕'
 DayOfWeek = ['월', '화', '수', '목', '금', '토', '일']
 AMPM = {'AM':'오전', 'PM':'오후'}
-weather_locale = '춘천시 옥천동' # 네이버 날씨 받아올 곳
+weather_locale = '춘천시 옥천동'
 hour_4 = 14400000 # 4시간
 
 class Clock(Frame):
@@ -34,18 +32,18 @@ class Clock(Frame):
         # 시간
         self.time1 = ''
         self.timeLbl = Label(self, font=(setfont, large_text_size), fg="white", bg="black")
-        self.timeLbl.pack(side=TOP, anchor=E)
+        self.timeLbl.pack(side=TOP, anchor=NE)
         
         # 나머지 요일
         self.day_of_week1 = ''
         self.dayOWLbl = Label(self, text=self.day_of_week1, font=(setfont, small_text_size), fg="white", bg="black")
-        self.dayOWLbl.pack(side=TOP, anchor=E)
-        
+        self.dayOWLbl.pack(side=TOP, anchor=NE)
+        '''
         # 시계 밑에 워터마크
         self.watermark = '\n캡스톤 김휘진 양상열 황승현'
         self.watermarkLbl = Label(self, text=self.watermark, font=(setfont, small_text_size, 'bold'), fg="white", bg="black")
         self.watermarkLbl.pack(side=TOP, anchor=E)
-        
+        '''
         # 시간 새로고침, 받아오기
         self.update()
 
@@ -67,8 +65,7 @@ class Weather(Frame):
         Frame.__init__(self, parent, bg='black')
 
         self.weatherContainer = Frame(self, bg="black")
-        self.weatherContainer.pack(side=TOP)
-        
+        self.weatherContainer.pack(side=TOP, anchor=NE)
         self.parsing()
     
     def parsing(self):
@@ -93,19 +90,20 @@ class Weather(Frame):
         
         #위치
         self.weatherLbl1 = Label(self.weatherContainer, text = weather_locale, font=(setfont, medium_text_size, 'bold'), fg = "white", bg = "black")
-        self.weatherLbl1.pack(side=TOP, anchor=W)
+        self.weatherLbl1.pack(side=TOP, anchor=NE)
         # 온도
         self.weatherLbl2 = Label(self.weatherContainer, text = self.temperature, font=(setfont, large_text_size), fg = "white", bg = "black")
-        self.weatherLbl2.pack(side=TOP, anchor=W)
+        self.weatherLbl2.pack(side=TOP, anchor=NE)
+        '''
         # 상세정보
         self.weatherLbl3 = Label(self.weatherContainer, text = self.weatherinfo, font=(setfont, small_text_size), fg = "white", bg = "black")
         self.weatherLbl3.pack(side=TOP, anchor=W)
-        
+        '''
         # 날씨 테스트용
         print('============================')
         print('weather update time' + time.strftime(' %I:%M'))
         print(self.temperature)
-        print(self.weatherinfo)
+        # print(self.weatherinfo)
         print('============================')
         
         # 4시간마다 업데이트
@@ -159,35 +157,77 @@ class Naver_RT_search_word(Frame):
         driver.get(url)
         
     def parsing(self):
-        
+        html = driver.page_source
+        soup = BeautifulSoup(html)
+
+        item_title = soup.select('span.item_title')
+
+        print('==============')
+        num = 1
+        for i in item_title:
+           print(str(num) + '. '  + i.get_text(), end='\n')
+           num += 1
+    
+        driver.close()
 
 class FullscreenWindow:
     def __init__(self):
         self.tk = Tk()
         self.tk.configure(background='black')
-        self.topFrame = Frame(self.tk, background = 'black')
+        '''
+        ┌─────────────────────┐
+        │topFrameNW│topFrameNE│  topFrame
+        │          │          │
+        │          │          │
+        │─────────────────────│
+        │     BottomFrame     │
+        │                     │
+        │                     │
+        │                     │
+        │─────────────────────│
+        │     BottomFrame2    │
+        │                     │
+        │                     │
+        │                     │
+        └─────────────────────┘
+        '''
+        self.topFrame = Frame(self.tk, background = 'green')
+        self.topFrame_NW = Frame(self.topFrame, background = 'white')
+        self.topFrame_NE = Frame(self.topFrame, background = 'blue')
         self.bottomFrame = Frame(self.tk, background = 'black')
-        self.topFrame.pack(side = TOP, fill=BOTH, expand = YES)
-        self.bottomFrame.pack(side = BOTTOM, fill=BOTH, expand = YES)
+        self.bottomFrame2 = Frame(self.tk, background = 'red')
         
+        self.topFrame.pack(side = TOP, fill=BOTH, expand=YES)
+        self.topFrame_NW.pack(side = LEFT, anchor = NW, fill=BOTH, expand = YES)
+        self.topFrame_NE.pack(side = RIGHT, anchor = NE, fill=BOTH, expand = YES)
+        self.bottomFrame.pack(side = BOTTOM, fill=BOTH, expand = YES)
+        self.bottomFrame2.pack(side = BOTTOM, fill=BOTH, expand = YES)
+        
+        '''
+        # windows 피벗 해상도
+        resolution = str(GetSystemMetrics(1)) + str('x') + str(GetSystemMetrics(0))
+        self.tk.geometry(resolution)
+        self.tk.resizable(width=0, height=0)    # 창 크기 변경 금지
+        '''
+        
+        # 전체화면
         self.state = False # 전체화면 우선 False로 설정 후 아래 실행
         self.tk.attributes("-fullscreen", True) # 일단 자동으로 바로 전체화면 뜨게함
         self.tk.bind("<Return>", self.go_fullscreen) # 엔터 누르면 전체화면
         self.tk.bind("<Escape>", self.end_fullscreen) # esc 종료
         
         # 시계
-        self.clock = Clock(self.topFrame)
-        self.clock.pack(side=RIGHT, anchor=N, padx=50, pady=30)
-        
-        # 뉴스
-        self.news = News(self.bottomFrame)
-        self.news.pack(side=LEFT, anchor=W, padx=50, pady=30)
+        self.clock = Clock(self.topFrame_NE)
+        self.clock.pack(side=RIGHT, anchor=N, padx=5, pady=3)
         
         # 날씨
-        self.weather = Weather(self.topFrame)
-        self.weather.pack(side=LEFT, anchor=N, padx=50, pady=30)
-
-
+        self.weather = Weather(self.topFrame_NE)
+        self.weather.pack(side=BOTTOM, anchor=W, padx=5, pady=3)
+        
+        # 뉴스
+        self.news = News(self.topFrame_NW)
+        self.news.pack(side=TOP, anchor=SW, padx=5, pady=3)
+        
     def go_fullscreen(self, event=None):
         self.state = not self.state
         self.tk.attributes("-fullscreen", self.state)
@@ -201,3 +241,4 @@ class FullscreenWindow:
 if __name__ == '__main__':
     w = FullscreenWindow()
     w.tk.mainloop()
+    
